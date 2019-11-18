@@ -5,9 +5,8 @@ const os = require("os");
 /** @type {CommandLineOptions} */
 module.exports = minimist(process.argv.slice(2), {
     boolean: ["debug", "dirty", "light", "colors", "lint", "lkg", "soft", "fix", "failed", "keepFailed", "force", "built"],
-    string: ["browser", "tests", "inspect", "host", "reporter", "stackTraceLimit", "timeout", "shards", "shardId"],
+    string: ["tests", "inspect", "label", "host", "reporter", "stackTraceLimit", "timeout", "shards", "shardId"],
     alias: {
-        "b": "browser",
         "d": "debug", "debug-brk": "debug",
         "i": "inspect", "inspect-brk": "inspect",
         "t": "tests", "test": "tests",
@@ -24,7 +23,6 @@ module.exports = minimist(process.argv.slice(2), {
         debug: process.env.debug || process.env["debug-brk"] || process.env.d,
         inspect: process.env.inspect || process.env["inspect-brk"] || process.env.i,
         host: process.env.TYPESCRIPT_HOST || process.env.host || "node",
-        browser: process.env.browser || process.env.b || (os.platform() === "win32" ? "edge" : "chrome"),
         timeout: process.env.timeout || 40000,
         tests: process.env.test || process.env.tests || process.env.t,
         runners: process.env.runners || process.env.runner || process.env.ru,
@@ -56,7 +54,6 @@ if (module.exports.built) {
  * @property {boolean} built
  * @property {boolean} soft
  * @property {boolean} fix
- * @property {string} browser
  * @property {string} tests
  * @property {string} inspect
  * @property {string} runners

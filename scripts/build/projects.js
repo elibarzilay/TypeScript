@@ -33,7 +33,10 @@ class ProjectQueue {
     }
 }
 
-const projectBuilder = new ProjectQueue((projects, lkg, force) => exec(process.execPath, [lkg ? "./lib/tsc" : "./built/local/tsc", "-b", ...(force ? ["--force"] : []), ...projects], { hidePrompt: true }));
+const projectBuilder = new ProjectQueue((projects, lkg, force) =>
+    exec(process.execPath,
+         [lkg ? "./lib/tsc" : "./built/local/tsc", "-b", ...(force ? ["--force"] : []), ...projects],
+         { hidePrompt: true }));
 
 /**
  * @param {string} project
@@ -43,14 +46,20 @@ const projectBuilder = new ProjectQueue((projects, lkg, force) => exec(process.e
  */
 exports.buildProject = (project, { lkg, force } = {}) => projectBuilder.enqueue(project, { lkg, force });
 
-const projectCleaner = new ProjectQueue((projects, lkg) => exec(process.execPath, [lkg ? "./lib/tsc" : "./built/local/tsc", "-b", "--clean", ...projects], { hidePrompt: true }));
+const projectCleaner = new ProjectQueue((projects, lkg) =>
+    exec(process.execPath,
+         [lkg ? "./lib/tsc" : "./built/local/tsc", "-b", "--clean", ...projects],
+         { hidePrompt: true }));
 
 /**
  * @param {string} project
  */
 exports.cleanProject = (project) => projectCleaner.enqueue(project);
 
-const projectWatcher = new ProjectQueue((projects) => exec(process.execPath, ["./lib/tsc", "-b", "--watch", ...projects], { hidePrompt: true }));
+const projectWatcher = new ProjectQueue((projects) =>
+    exec(process.execPath,
+         ["./lib/tsc", "-b", "--watch", ...projects],
+         { hidePrompt: true }));
 
 /**
  * @param {string} project
