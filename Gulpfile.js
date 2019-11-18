@@ -16,6 +16,7 @@ const { prependFile } = require("./scripts/build/prepend");
 const { exec, readJson, needsUpdate, getDiffTool, getDirSize, rm } = require("./scripts/build/utils");
 const { runConsoleTests, refBaseline, localBaseline, refRwcBaseline, localRwcBaseline } = require("./scripts/build/tests");
 const { buildProject, cleanProject, watchProject } = require("./scripts/build/projects");
+const labeledBuild = require("./scripts/build/labeledBuild");
 const cmdLineOptions = require("./scripts/build/options");
 
 const copyright = "CopyrightNotice.txt";
@@ -424,9 +425,15 @@ task("other-outputs").description = "Builds miscelaneous scripts and documents d
 const buildFoldStart = async () => { if (fold.isTravis()) console.log(fold.start("build")); };
 const buildFoldEnd = async () => { if (fold.isTravis()) console.log(fold.end("build")); };
 task("local", series(buildFoldStart, preBuild, parallel(localize, buildTsc, buildServer, buildServices, buildLssl, buildOtherOutputs), buildFoldEnd));
-task("local").description = "Builds the full compiler and services";
+task("local").description = "Builds the full compiler and services to \"built/local\"";
 task("local").flags = {
     "   --built": "Compile using the built version of the compiler."
+};
+
+task("build", labeledBuild(task("local")));
+task("build").description = "Builds the full compiler and services";
+task("build").flags = {
+    "   -l --label=<name>": "Work on the build labeled <name>, and make it active (as built/local)."
 };
 
 task("watch-local", series(preBuild, parallel(watchLib, watchDiagnostics, watchTsc, watchServices, watchServer, watchLssl)));

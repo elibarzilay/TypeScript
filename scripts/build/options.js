@@ -10,6 +10,7 @@ module.exports = minimist(process.argv.slice(2), {
         "d": "debug", "debug-brk": "debug",
         "i": "inspect", "inspect-brk": "inspect",
         "t": "tests", "test": "tests",
+        "l": "label",
         "ru": "runners", "runner": "runners",
         "r": "reporter",
         "c": "colors", "color": "colors",
@@ -25,6 +26,7 @@ module.exports = minimist(process.argv.slice(2), {
         host: process.env.TYPESCRIPT_HOST || process.env.host || "node",
         timeout: process.env.timeout || 40000,
         tests: process.env.test || process.env.tests || process.env.t,
+        label: process.env.label || process.env.l || "",
         runners: process.env.runners || process.env.runner || process.env.ru,
         light: process.env.light === undefined || process.env.light !== "false",
         reporter: process.env.reporter || process.env.r,
@@ -56,6 +58,7 @@ if (module.exports.built) {
  * @property {boolean} fix
  * @property {string} tests
  * @property {string} inspect
+ * @property {string} label
  * @property {string} runners
  * @property {string|number} workers
  * @property {string} host
