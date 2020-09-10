@@ -17264,10 +17264,8 @@ namespace ts {
             }
 
             function structuredTypeRelatedTo(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
-                tracing.begin(tracing.Phase.Check, "structuredTypeRelatedTo", { sourceId: source.id, targetId: target.id });
-                const result = structuredTypeRelatedToWorker(source, target, reportErrors, intersectionState);
-                tracing.end();
-                return result;
+                return tracing.wrap(tracing.Phase.Check, "structuredTypeRelatedTo", { sourceId: source.id, targetId: target.id }, () =>
+                    structuredTypeRelatedToWorker(source, target, reportErrors, intersectionState));
             }
 
             function structuredTypeRelatedToWorker(source: Type, target: Type, reportErrors: boolean, intersectionState: IntersectionState): Ternary {
@@ -18519,12 +18517,11 @@ namespace ts {
         // instantiations of the generic type for type arguments with known relations. The function
         // returns the emptyArray singleton when invoked recursively for the given generic type.
         function getVariancesWorker<TCache extends { variances?: VarianceFlags[] }>(typeParameters: readonly TypeParameter[] = emptyArray, cache: TCache, createMarkerType: (input: TCache, param: TypeParameter, marker: Type) => Type): VarianceFlags[] {
-            let variances = cache.variances;
-            if (!variances) {
-                tracing.begin(tracing.Phase.Check, "getVariancesWorker", { arity: typeParameters.length, id: (cache as any).id ?? (cache as any).declaredType?.id ?? -1 });
+            if (cache.variances) return cache.variances;
+            return tracing.wrap(tracing.Phase.Check, "getVariancesWorker", { arity: typeParameters.length, id: (cache as any).id ?? (cache as any).declaredType?.id ?? -1 }, () => {
                 // The emptyArray singleton is used to signal a recursive invocation.
                 cache.variances = emptyArray;
-                variances = [];
+                const variances = [];
                 for (const tp of typeParameters) {
                     let unmeasurable = false;
                     let unreliable = false;
@@ -18556,9 +18553,8 @@ namespace ts {
                     variances.push(variance);
                 }
                 cache.variances = variances;
-                tracing.end();
-            }
-            return variances;
+                return variances;
+            });
         }
 
         function getVariances(type: GenericType): VarianceFlags[] {
@@ -30968,18 +30964,18 @@ namespace ts {
         }
 
         function checkExpression(node: Expression | QualifiedName, checkMode?: CheckMode, forceTuple?: boolean): Type {
-            tracing.begin(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end });
-            const saveCurrentNode = currentNode;
-            currentNode = node;
-            instantiationCount = 0;
-            const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
-            const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
-            if (isConstEnumObjectType(type)) {
-                checkConstEnumAccess(node, type);
-            }
-            currentNode = saveCurrentNode;
-            tracing.end();
-            return type;
+            return tracing.wrap(tracing.Phase.Check, "checkExpression", { kind: node.kind, pos: node.pos, end: node.end }, () => {
+                const saveCurrentNode = currentNode;
+                currentNode = node;
+                instantiationCount = 0;
+                const uninstantiatedType = checkExpressionWorker(node, checkMode, forceTuple);
+                const type = instantiateTypeWithSingleGenericCallSignature(node, uninstantiatedType, checkMode);
+                if (isConstEnumObjectType(type)) {
+                    checkConstEnumAccess(node, type);
+                }
+                currentNode = saveCurrentNode;
+                return type;
+            });
         }
 
         function checkConstEnumAccess(node: Expression | QualifiedName, type: Type) {
@@ -33769,10 +33765,10 @@ namespace ts {
         }
 
         function checkVariableDeclaration(node: VariableDeclaration) {
-            tracing.begin(tracing.Phase.Check, "checkVariableDeclaration", { kind: node.kind, pos: node.pos, end: node.end });
-            checkGrammarVariableDeclaration(node);
-            checkVariableLikeDeclaration(node);
-            tracing.end();
+            return tracing.wrap(tracing.Phase.Check, "checkVariableDeclaration", { kind: node.kind, pos: node.pos, end: node.end }, () => {
+                checkGrammarVariableDeclaration(node);
+                checkVariableLikeDeclaration(node);
+            });
         }
 
         function checkBindingElement(node: BindingElement) {
@@ -36843,12 +36839,12 @@ namespace ts {
         }
 
         function checkSourceFile(node: SourceFile) {
-            tracing.begin(tracing.Phase.Check, "checkSourceFile", { path: node.path });
-            performance.mark("beforeCheck");
-            checkSourceFileWorker(node);
-            performance.mark("afterCheck");
-            performance.measure("Check", "beforeCheck", "afterCheck");
-            tracing.end();
+            return tracing.wrap(tracing.Phase.Check, "checkSourceFile", { path: node.path }, () => {
+                performance.mark("beforeCheck");
+                checkSourceFileWorker(node);
+                performance.mark("afterCheck");
+                performance.measure("Check", "beforeCheck", "afterCheck");
+            });
         }
 
         function unusedIsError(kind: UnusedKind, isAmbient: boolean): boolean {

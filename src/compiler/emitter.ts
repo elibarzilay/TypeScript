@@ -300,17 +300,14 @@ namespace ts {
                     sourceFiles: sourceFileOrBundle.sourceFiles.map(file => relativeToBuildInfo(getNormalizedAbsolutePath(file.fileName, host.getCurrentDirectory())))
                 };
             }
-            tracing.begin(tracing.Phase.Emit, "emitJsFileOrBundle", { jsFilePath });
-            emitJsFileOrBundle(sourceFileOrBundle, jsFilePath, sourceMapFilePath, relativeToBuildInfo);
-            tracing.end();
+            tracing.wrap(tracing.Phase.Emit, "emitJsFileOrBundle", { jsFilePath }, () =>
+                emitJsFileOrBundle(sourceFileOrBundle, jsFilePath, sourceMapFilePath, relativeToBuildInfo));
 
-            tracing.begin(tracing.Phase.Emit, "emitDeclarationFileOrBundle", { declarationFilePath });
-            emitDeclarationFileOrBundle(sourceFileOrBundle, declarationFilePath, declarationMapPath, relativeToBuildInfo);
-            tracing.end();
+            tracing.wrap(tracing.Phase.Emit, "emitDeclarationFileOrBundle", { declarationFilePath }, () =>
+                emitDeclarationFileOrBundle(sourceFileOrBundle, declarationFilePath, declarationMapPath, relativeToBuildInfo));
 
-            tracing.begin(tracing.Phase.Emit, "emitBuildInfo", { buildInfoPath });
-            emitBuildInfo(bundleBuildInfo, buildInfoPath);
-            tracing.end();
+            tracing.wrap(tracing.Phase.Emit, "emitBuildInfo", { buildInfoPath }, () =>
+                emitBuildInfo(bundleBuildInfo, buildInfoPath));
 
             if (!emitSkipped && emittedFilesList) {
                 if (!emitOnlyDtsFiles) {

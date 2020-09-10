@@ -697,6 +697,16 @@ namespace ts {
     export function createProgram(rootNames: readonly string[], options: CompilerOptions, host?: CompilerHost, oldProgram?: Program, configFileParsingDiagnostics?: readonly Diagnostic[]): Program;
     export function createProgram(rootNamesOrOptions: readonly string[] | CreateProgramOptions, _options?: CompilerOptions, _host?: CompilerHost, _oldProgram?: Program, _configFileParsingDiagnostics?: readonly Diagnostic[]): Program {
         const createProgramOptions = isArray(rootNamesOrOptions) ? createCreateProgramOptions(rootNamesOrOptions, _options!, _host, _oldProgram, _configFileParsingDiagnostics) : rootNamesOrOptions; // TODO: GH#18217
+        return tracing.wrap(tracing.Phase.Program, "createProgram", {}, () => {
+            performance.mark("beforeProgram");
+            const program = createProgramWorker(createProgramOptions);
+            performance.mark("afterProgram");
+            performance.measure("Program", "beforeProgram", "afterProgram");
+            return program;
+        });
+    }
+
+    function createProgramWorker(createProgramOptions: CreateProgramOptions): Program {
         const { rootNames, options, configFileParsingDiagnostics, projectReferences } = createProgramOptions;
         let { oldProgram } = createProgramOptions;
 
@@ -734,9 +744,6 @@ namespace ts {
 
         // Track source files that are source files found by searching under node_modules, as these shouldn't be compiled.
         const sourceFilesFoundSearchingNodeModules = new Map<string, boolean>();
-
-        tracing.begin(tracing.Phase.Program, "createProgram", {});
-        performance.mark("beforeProgram");
 
         const host = createProgramOptions.host || createCompilerHost(options);
         const configParsingHost = parseConfigHostFromCompilerHostLike(host);
@@ -985,10 +992,6 @@ namespace ts {
 
         onProgramCreateComplete();
         verifyCompilerOptions();
-        performance.mark("afterProgram");
-        performance.measure("Program", "beforeProgram", "afterProgram");
-        tracing.end();
-
         return program;
 
         function resolveModuleNamesWorker(moduleNames: string[], containingFile: SourceFile, reusedNames: string[] | undefined): readonly ResolvedModuleFull[] {
@@ -1546,21 +1549,21 @@ namespace ts {
 
         function emitBuildInfo(writeFileCallback?: WriteFileCallback): EmitResult {
             Debug.assert(!outFile(options));
-            tracing.begin(tracing.Phase.Emit, "emitBuildInfo", {});
-            performance.mark("beforeEmit");
-            const emitResult = emitFiles(
-                notImplementedResolver,
-                getEmitHost(writeFileCallback),
-                /*targetSourceFile*/ undefined,
-                /*transformers*/ noTransformers,
-                /*emitOnlyDtsFiles*/ false,
-                /*onlyBuildInfo*/ true
-            );
+            return tracing.wrap(tracing.Phase.Emit, "emitBuildInfo", {}, () => {
+                performance.mark("beforeEmit");
+                const emitResult = emitFiles(
+                    notImplementedResolver,
+                    getEmitHost(writeFileCallback),
+                    /*targetSourceFile*/ undefined,
+                    /*transformers*/ noTransformers,
+                    /*emitOnlyDtsFiles*/ false,
+                    /*onlyBuildInfo*/ true
+                );
 
-            performance.mark("afterEmit");
-            performance.measure("Emit", "beforeEmit", "afterEmit");
-            tracing.end();
-            return emitResult;
+                performance.mark("afterEmit");
+                performance.measure("Emit", "beforeEmit", "afterEmit");
+                return emitResult;
+            });
         }
 
         function getResolvedProjectReferences() {
@@ -1620,10 +1623,8 @@ namespace ts {
         }
 
         function emit(sourceFile?: SourceFile, writeFileCallback?: WriteFileCallback, cancellationToken?: CancellationToken, emitOnlyDtsFiles?: boolean, transformers?: CustomTransformers, forceDtsEmit?: boolean): EmitResult {
-            tracing.begin(tracing.Phase.Emit, "emit", { path: sourceFile?.path });
-            const result = runWithCancellationToken(() => emitWorker(program, sourceFile, writeFileCallback, cancellationToken, emitOnlyDtsFiles, transformers, forceDtsEmit));
-            tracing.end();
-            return result;
+            return tracing.wrap(tracing.Phase.Emit, "emit", { path: sourceFile?.path }, () =>
+                runWithCancellationToken(() => emitWorker(program, sourceFile, writeFileCallback, cancellationToken, emitOnlyDtsFiles, transformers, forceDtsEmit)));
         }
 
         function isEmitBlocked(emitFileName: string): boolean {

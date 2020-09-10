@@ -55,7 +55,6 @@ namespace ts.tracing {
             Debug.assert(!fs, "Tracing is not in progress");
             return;
         }
-
         Debug.assert(fs);
 
         // This both indicates that the trace is untruncated and conveniently
@@ -88,28 +87,18 @@ namespace ts.tracing {
         Emit = "emit",
     }
 
-    export function begin(phase: Phase, name: string, args: object) {
-        if (!traceFd) {
-            return;
-        }
+    export function wrap<T>(phase: Phase, name: string, args: object,
+                            cb: () => T): T {
+        if (!traceFd) return cb();
+        const t0 = 1000 * timestamp();
+        const result: T = cb();
+        const t1 = 1000 * timestamp();
         Debug.assert(fs);
-
         performance.mark("beginTracing");
-        fs.writeSync(traceFd, `{"pid":1,"tid":1,"ph":"B","cat":"${phase}","ts":${1000 * timestamp()},"name":"${name}","args":{ "ts": ${JSON.stringify(args)} }},\n`);
+        fs.writeSync(traceFd, `{"pid":1,"tid":1,"ph":"X","cat":"${phase}","ts":${t0},"dur":${t1-t0},"name":"${name}","args":{"ts":${JSON.stringify(args)}}},\n`);
         performance.mark("endTracing");
         performance.measure("Tracing", "beginTracing", "endTracing");
-    }
-
-    export function end() {
-        if (!traceFd) {
-            return;
-        }
-        Debug.assert(fs);
-
-        performance.mark("beginTracing");
-        fs.writeSync(traceFd, `{"pid":1,"tid":1,"ph":"E","ts":${1000 * timestamp()}},\n`);
-        performance.mark("endTracing");
-        performance.measure("Tracing", "beginTracing", "endTracing");
+        return result;
     }
 
     export function instant(phase: Phase, name: string, args: object) {

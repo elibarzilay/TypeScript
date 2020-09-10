@@ -614,23 +614,22 @@ namespace ts {
     }
 
     export function createSourceFile(fileName: string, sourceText: string, languageVersion: ScriptTarget, setParentNodes = false, scriptKind?: ScriptKind): SourceFile {
-        tracing.begin(tracing.Phase.Parse, "createSourceFile", { path: fileName });
-        performance.mark("beforeParse");
-        let result: SourceFile;
+        return tracing.wrap(tracing.Phase.Parse, "createSourceFile", { path: fileName }, () => {
+            performance.mark("beforeParse");
+            let result: SourceFile;
+            perfLogger.logStartParseSourceFile(fileName);
+            if (languageVersion === ScriptTarget.JSON) {
+                result = Parser.parseSourceFile(fileName, sourceText, languageVersion, /*syntaxCursor*/ undefined, setParentNodes, ScriptKind.JSON);
+            }
+            else {
+                result = Parser.parseSourceFile(fileName, sourceText, languageVersion, /*syntaxCursor*/ undefined, setParentNodes, scriptKind);
+            }
+            perfLogger.logStopParseSourceFile();
 
-        perfLogger.logStartParseSourceFile(fileName);
-        if (languageVersion === ScriptTarget.JSON) {
-            result = Parser.parseSourceFile(fileName, sourceText, languageVersion, /*syntaxCursor*/ undefined, setParentNodes, ScriptKind.JSON);
-        }
-        else {
-            result = Parser.parseSourceFile(fileName, sourceText, languageVersion, /*syntaxCursor*/ undefined, setParentNodes, scriptKind);
-        }
-        perfLogger.logStopParseSourceFile();
-
-        performance.mark("afterParse");
-        performance.measure("Parse", "beforeParse", "afterParse");
-        tracing.end();
-        return result;
+            performance.mark("afterParse");
+            performance.measure("Parse", "beforeParse", "afterParse");
+            return result;
+        });
     }
 
     export function parseIsolatedEntityName(text: string, languageVersion: ScriptTarget): EntityName | undefined {
