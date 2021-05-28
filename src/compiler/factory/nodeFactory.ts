@@ -6133,7 +6133,7 @@ namespace ts {
         }
 
         let token = rawTextScanner.scan();
-        if (token === SyntaxKind.CloseBracketToken) {
+        if (token === SyntaxKind.CloseBraceToken) {
             token = rawTextScanner.reScanTemplateToken(/*isTaggedTemplate*/ false);
         }
 
